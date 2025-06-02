@@ -6,8 +6,9 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-export default function BookmarkButton({ job, onToggle }) {
+export default function BookmarkButton({ job }) {
   const [bookmarked, setBookmarked] = useState(false);
+  
   useEffect(() => {
     const checkSavedStatus = async () => {
       const email = localStorage.getItem("userEmail");
@@ -34,6 +35,7 @@ export default function BookmarkButton({ job, onToggle }) {
 
     checkSavedStatus();
   }, [job.id]);
+
   const handleClick = async () => {
     const email = localStorage.getItem("userEmail");
     const token = localStorage.getItem("token");
@@ -48,8 +50,6 @@ export default function BookmarkButton({ job, onToggle }) {
     setBookmarked(newBookmarkedState);
     
     try {
-      let updatedJobs = JSON.parse(localStorage.getItem("savedJobs")) || [];
-      
       if (newBookmarkedState) {
         const jobData = {
           id: job.id,
@@ -60,31 +60,31 @@ export default function BookmarkButton({ job, onToggle }) {
           description: job.description,
           redirect_url: job.redirect_url
         };
-          const response = await axios.post("http://localhost:5000/api/savedjobs/save", { 
+
+        const response = await axios.post("http://localhost:5000/api/savedjobs/save", { 
           email, 
           jobData 
         }, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
+            Authorization: `Bearer ${token}`
           }
         });
+
         if (response.data.success) {
-          updatedJobs.push(job.id);
           toast.success("Job saved successfully!", { position: "top-center" });
         }
       } else {
         const response = await axios.delete("http://localhost:5000/api/savedjobs/unsave", {
           data: { email, jobId: job.id },
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
+            Authorization: `Bearer ${token}`
           }
         });
-        updatedJobs = updatedJobs.filter((id) => id !== job.id);
-        toast.info("Job removed from saved list.", { position: "top-center" });
+        
+        if (response.data.success) {
+          toast.info("Job removed from saved list.", { position: "top-center" });
+        }
       }
-
-      localStorage.setItem("savedJobs", JSON.stringify(updatedJobs));
-      onToggle();
     } catch (error) {
       console.error("Error updating saved jobs:", error);
       toast.error("Failed to update saved jobs.", { position: "top-center" });
@@ -120,8 +120,7 @@ export default function BookmarkButton({ job, onToggle }) {
         </AnimatePresence>
       </button>
 
-      {/* Toast Container */}
-      <ToastContainer autoClose={3000} hideProgressBar={false} />
+      <ToastContainer autoClose={2000} hideProgressBar={false} />
     </>
   );
 }

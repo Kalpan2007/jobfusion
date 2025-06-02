@@ -4,13 +4,13 @@ import { useNavigate, useLocation } from "react-router-dom";
 import BookmarkButton from "../components/SaveBtn";
 import axios from "axios";
 
-const JobCard = ({ job, onToggle }) => {
+const JobCard = ({ job }) => {
   const navigate = useNavigate();
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer relative">
       <div className="absolute top-4 right-4">
-        <BookmarkButton job={job} onToggle={onToggle} />
+        <BookmarkButton job={job} />
       </div>
       <div
         onClick={() => navigate(`/jobs/${job.id}`, { state: { job } })}
@@ -155,7 +155,7 @@ const TrendingJobs = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {jobs.map((job) => (
-              <JobCard key={job.id} job={job} onToggle={() => fetchJobs(searchQuery)} />
+              <JobCard key={job.id} job={job} />
             ))}
           </div>
         )}
