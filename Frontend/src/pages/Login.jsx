@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BriefcaseIcon, Eye, EyeOff } from "lucide-react";
-import ModernLoader from "../components/Loader"; // Import the loader
+import ModernLoader from "../components/Loader";
+import axios from "axios";
 
 function Login() {
     const [showPassword, setShowPassword] = useState(false);
@@ -14,6 +15,8 @@ function Login() {
     const [error, setError] = useState("");
     const [view, setView] = useState("login"); // login, verify, forgotPassword, resetPassword
     const navigate = useNavigate();
+
+    const API_BASE_URL = "http://localhost:5000/api/users";
 
     // Function to handle input changes (optimized with useCallback)
     const handleChange = useCallback((e) => {
@@ -30,103 +33,81 @@ function Login() {
         setError("");
 
         try {
-            if (view === "login") {
-                const userData = {
-                    email: formData.email,
-                    password: formData.password,
-                };                const response = await fetch("http://localhost:5000/api/users/login", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify(userData),
-                });
+            let endpoint = "";
+            let payload = {};
 
-                const data = await response.json();
+            switch (view) {
+                case "login":
+                    endpoint = `${API_BASE_URL}/login`;
+                    payload = {
+                        email: formData.email,
+                        password: formData.password,
+                    };
+                    break;
+                case "verify":
+                    endpoint = `${API_BASE_URL}/verify-otp`;
+                    payload = {
+                        email: formData.email,
+                        otp: formData.otp
+                    };
+                    break;
+                case "forgotPassword":
+                    endpoint = `${API_BASE_URL}/forgot-password`;
+                    payload = {
+                        email: formData.email
+                    };
+                    break;
+                case "resetPassword":
+                    endpoint = `${API_BASE_URL}/reset-password`;
+                    payload = {
+                        email: formData.email,
+                        otp: formData.otp,
+                        newPassword: formData.password
+                    };
+                    break;
+                default:
+                    throw new Error("Invalid view state");
+            }
 
-                if (response.ok) {
-                    localStorage.setItem("token", data.token);
-                    localStorage.setItem("userEmail", formData.email);
-                    navigate("/home");
-                } else {
-                    if (data.needsVerification) {
-                        setView("verify");
-                    } else {
-                        setError(data.message || "Login failed. Please try again.");
-                    }
-                }
-            } else if (view === "verify") {
-                const verifyData = {
-                    email: formData.email,
-                    otp: formData.otp
-                };
+            const response = await axios.post(endpoint, payload, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                withCredentials: true
+            });
 
-                const response = await fetch("https://jobfusion.onrender.com/api/users/verify-otp", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(verifyData),
-                });
+            const data = response.data;
 
-                const data = await response.json();
-
-                if (response.ok) {
-                    setView("login");
-                    setError("Email verified successfully. You can now login.");
-                } else {
-                    setError(data.message || "Verification failed. Please try again.");
-                }
-            } else if (view === "forgotPassword") {
-                const forgotData = {
-                    email: formData.email
-                };
-
-                const response = await fetch("https://jobfusion.onrender.com/api/users/forgot-password", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(forgotData),
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    setView("resetPassword");
-                } else {
-                    setError(data.message || "Failed to send reset code. Please try again.");
-                }
-            } else if (view === "resetPassword") {
-                const resetData = {
-                    email: formData.email,
-                    otp: formData.otp,
-                    newPassword: formData.password
-                };
-
-                const response = await fetch("https://jobfusion.onrender.com/api/users/reset-password", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(resetData),
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    setView("login");
-                    setError("Password reset successful. You can now login with your new password.");
-                    setFormData(prev => ({...prev, password: "", otp: ""}));
-                } else {
-                    setError(data.message || "Password reset failed. Please try again.");
-                }
+            if (view === "login" && data.token) {
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("userEmail", formData.email);
+                navigate("/home");
+            } else if (view === "verify" && data.success) {
+                setView("login");
+                setError("Email verified successfully. You can now login.");
+            } else if (view === "forgotPassword" && data.success) {
+                setView("resetPassword");
+            } else if (view === "resetPassword" && data.success) {
+                setView("login");
+                setError("Password reset successful. You can now login with your new password.");
+                setFormData(prev => ({...prev, password: "", otp: ""}));
             }
         } catch (error) {
             console.error("Error:", error);
-            setError("An error occurred. Please try again later.");
+            if (error.response) {
+                // Server responded with an error
+                setError(error.response.data.message || "An error occurred. Please try again.");
+                if (error.response.status === 401) {
+                    setError("Invalid credentials. Please try again.");
+                }
+            } else if (error.request) {
+                // Request was made but no response received
+                setError("Unable to connect to the server. Please try again later.");
+            } else {
+                // Something else happened
+                setError("An unexpected error occurred. Please try again.");
+            }
         } finally {
             setLoading(false); // Hide loader
         }
