@@ -236,15 +236,6 @@ const ResumeCard = ({ resume, onDelete }) => {
 const JobCard = ({ job, onToggle }) => {
   const navigate = useNavigate();
 
-  if (!job) {
-    return null; // Don't render anything if job is undefined
-  }
-
-  // Safely access nested properties
-  const companyName = job.company?.display_name || job.company?.name || 'Company Name Not Available';
-  const locationName = job.location?.display_name || job.location?.name || 'Location Not Available';
-  const jobTitle = job.title || 'Job Title Not Available';
-
   return (
     <div className="bg-black p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer relative">
       <div className="absolute top-4 right-4">
@@ -254,9 +245,9 @@ const JobCard = ({ job, onToggle }) => {
         <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-4">
           <Database className="text-white" />
         </div>
-        <h3 className="font-semibold text-lg mb-2">{jobTitle}</h3>
-        <p className="text-sm text-gray-600 mb-2">{companyName}</p>
-        <p className="text-sm text-gray-500">{locationName}</p>
+        <h3 className="font-semibold text-lg mb-2">{job.title}</h3>
+        <p className="text-sm text-gray-600 mb-2">{job.company.display_name}</p>
+        <p className="text-sm text-gray-500">{job.location.display_name}</p>
       </div>
     </div>
   );
@@ -273,75 +264,43 @@ const UserDashboard = () => {
     const fetchUserData = async () => {
       try {
         const storedEmail = localStorage.getItem("userEmail");
-        const token = localStorage.getItem("token"); // Get the auth token
-        if (!storedEmail || !token) {
-          setError("No email or authentication token found.");
+        if (!storedEmail) {
+          setError("No email found in local storage.");
           setLoading(false);
           return;
         }
-        const response = await axios.get(`http://localhost:5000/api/users/profile/${storedEmail}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const response = await axios.get(`http://localhost:5000/api/users/profile/${storedEmail}`);
         if (response.data.success) {
           setUserData(response.data.data);
         } else {
           setError("Failed to fetch user data.");
         }
       } catch (err) {
-        console.error("Error fetching user data:", err);
-        setError(err.response?.data?.message || "Error fetching user data.");
+        setError("Error fetching user data.");
       } finally {
         setLoading(false);
       }
-    };    const fetchSavedData = async () => {
+    };
+
+    const fetchSavedData = async () => {
       const email = localStorage.getItem("userEmail");
-      const token = localStorage.getItem("token");
-      if (email && token) {
-        try {          // Fetch saved jobs with correct endpoint
-          const jobsResponse = await axios.get(`http://localhost:5000/api/savedjobs/saved/${email}`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
+      if (email) {
+        try {
+          // Fetch saved jobs
+          const jobsResponse = await axios.get(`http://localhost:5000/api/jobs/saved/${email}`);
           if (jobsResponse.data.success) {
-            // Handle empty array case
-            const jobs = jobsResponse.data.data || [];
-            // Ensure each job has the required structure
-            const validJobs = jobs.map(item => {
-              const jobData = item.jobData || {};
-              return {
-                id: jobData.id,
-                title: jobData.title,
-                company: {
-                  display_name: jobData.company?.display_name || 'Company Not Available'
-                },
-                location: {
-                  display_name: jobData.location?.display_name || 'Location Not Available'
-                },
-                ...jobData // preserve other fields
-              };
-            }).filter(job => job.id); // Only include jobs with valid IDs
-            setSavedJobs(validJobs);
-            console.log('Processed saved jobs:', validJobs);
-          } else {
-            console.warn("Failed to fetch saved jobs:", jobsResponse.data.message);
+            setSavedJobs(jobsResponse.data.data.map((item) => item.jobData));
           }
 
           // Fetch saved resumes
-          const resumesResponse = await axios.get(`http://localhost:5000/api/resumes/saved/${email}`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
+          const resumesResponse = await axios.get(`http://localhost:5000/api/resumes/saved/${email}`);
           if (resumesResponse.data.success) {
             console.log("Fetched saved resumes:", resumesResponse.data.data);
             setSavedResumes(resumesResponse.data.data);
           }
         } catch (err) {
           console.error("Error fetching saved data:", err);
-          setError(err.response?.data?.message || "Error fetching saved data.");
+          setError("Error fetching saved data.");
         }
       }
     };

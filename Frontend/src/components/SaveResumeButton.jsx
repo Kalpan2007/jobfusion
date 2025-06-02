@@ -26,10 +26,12 @@ const SaveResumeButton = ({ resumeData, onToggle }) => {
     const email = localStorage.getItem("userEmail");
 
     try {
-      console.log("Saving resumeData:", resumeData);
-      const response = await axios.post("https://jobfusion.onrender.com/api/resumes/save", {
+      console.log("Saving resumeData:", resumeData);      const response = await axios.post("http://localhost:5000/api/resumes/save", {
         email,
-        resumeData,
+        resumeData: {
+          ...resumeData,
+          templateId: resumeData.templateId || 'template01' // Ensure templateId is set
+        },
         title: resumeTitle,
       });
       setBookmarked(true);

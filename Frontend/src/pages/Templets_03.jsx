@@ -470,7 +470,7 @@ function Template03() {
             <button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
               <Download className="h-4 w-4" /> Download PDF
             </button>
-            <SaveResumeButton resumeData={resumeData} onToggle={() => {}} />
+            <SaveResumeButton resumeData={{ ...resumeData, templateId: "template03" }} />
           </div>
         </div>
 

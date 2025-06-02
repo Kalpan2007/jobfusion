@@ -11,12 +11,12 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import ResumePage from './pages/ResumePage';
 import ATS from './pages/Ats';
-import Templet01 from "./pages/Templets_01";
-import Template02 from './pages/Templets_02';
-import Template03 from './pages/Templets_03';
-import Template04 from './pages/Templets_04';
-import Template05 from './pages/Templets_05';
-import Template06 from './pages/Templets_06';
+import Template01 from "./pages/Templets_01";
+import Template02 from "./pages/Templets_02";
+import Template03 from "./pages/Templets_03";
+import Template04 from "./pages/Templets_04";
+import Template05 from "./pages/Templets_05";
+import Template06 from "./pages/Templets_06";
 import BlogForm from './components/BlogSection/BlogForm';
 import SuccessStories from './pages/SuccessStories';
 import { ThemeProvider } from './components/ThemeContext';
@@ -103,8 +103,7 @@ function App() {
           <Route path="/companies" element={<Companies />} />
           <Route path="/userdashboard" element={<UserDashboard />} />
           <Route path="/jobs/:id" element={<JobDetails />} />
-          <Route path="/resume" element={<ResumePage />} />
-          <Route path="/resume/template01" element={<Templet01 />} />
+          <Route path="/resume" element={<ResumePage />} />          <Route path="/resume/template01" element={<Template01 />} />
           <Route path="/resume/template02" element={<Template02 />} />
           <Route path="/resume/template03" element={<Template03 />} />
           <Route path="/resume/template04" element={<Template04 />} />

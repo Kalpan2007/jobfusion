@@ -38,10 +38,9 @@ const Template04 = () => {
     const [activeTab, setActiveTab] = useState('content');
     const [notification, setNotification] = useState({ show: false, message: '' });
     const [sidebarVisible, setSidebarVisible] = useState(true);
-    const [previewMode, setPreviewMode] = useState(false);
-
-    // Initial Resume Data State
+    const [previewMode, setPreviewMode] = useState(false);    // Initial Resume Data State
     const [resumeData, setResumeData] = useState({
+        templateId: "template04",
         photo: '',
         name: 'Juan Hernandez',
         title: 'Sales Executive',
@@ -49,36 +48,54 @@ const Template04 = () => {
         phone: '123-456-7890',
         email: 'email@yourmail.com',
         summary: 'A Sales Executive with 10+ years of professional experience...',
-        technicalSkills: ['Account Management', 'Consultative Selling', 'Strategic Selling', 'Cross-functional Collaboration', 'Sales Management'],
+        technicalSkills: [
+            'Sales Strategy',
+            'Client Relations',
+            'Market Analysis',
+            'Team Leadership',
+            'Sales Training',
+            'Contract Negotiation'
+        ],
         professionalExperience: [
-            { id: '1', company: 'Accelerate Software', period: 'February 2017 - Present', title: 'Senior Account Manager', responsibilities: ['Oversee 35+ enterprise customer accounts...'] },
-            { id: '2', company: 'Celeste Inc.', period: 'June 2013 - February 2017', title: 'Sales Account Executive', responsibilities: ['Managed 20+ client accounts...'] },
+            {
+                company: 'XYZ Corporation',
+                period: '2020 - Present',
+                responsibilities: [
+                    'Led a team of 10 sales representatives, achieving 120% of annual sales targets',
+                    'Developed and implemented new sales strategies resulting in 30% revenue growth'
+                ]
+            }
         ],
         education: [
-            { id: '1', degree: 'Bachelor of Science (B.S.) in Marketing', university: 'University of Florida, Gainesville, FL', period: 'September 2011 - June 2013' },
-            { id: '2', degree: 'Associate of Arts in Business', university: 'City Colleges, Chicago, IL', period: 'January 2008 - September 2010' },
+            {
+                degree: 'Bachelor of Business Administration',
+                university: 'University of Texas',
+                period: '2010 - 2014'
+            }
         ],
-        certifications: ['Certified Professional Sales Leader (CPSL), NASP, 2017', 'Salesforce Certification, Salesforce.com, 2015'],
-        socialLinks: { linkedin: 'linkedin.com/in/yourprofile', github: '', twitter: '', website: '' },
-        primaryColor: '#2E7D32',
-        secondaryColor: '#2E7D32',
-        accentColor: '#4CAF50',
-        headerTextColor: '#FFFFFF',
-        sidebarTextColor: '#FFFFFF',
-        mainTextColor: '#333333',
-        backgroundColor: '#FFFFFF',
-        fontSize: 'medium',
+        certifications: [
+            'Certified Sales Professional (CSP)',
+            'Advanced Negotiation Certification'
+        ],
         fontFamily: 'Inter, sans-serif',
-        sectionOrder: ['summary', 'technicalSkills', 'professionalExperience', 'education', 'certifications'],
-        sectionVisibility: { summary: true, technicalSkills: true, professionalExperience: true, education: true, certifications: true, socialLinks: true },
-        sectionStyles: {
-            summary: { bgColor: '#FFFFFF', textColor: '#333333' },
-            technicalSkills: { bgColor: '#2E7D32', textColor: '#FFFFFF' },
-            professionalExperience: { bgColor: '#FFFFFF', textColor: '#333333' },
-            education: { bgColor: '#FFFFFF', textColor: '#333333' },
-            certifications: { bgColor: '#FFFFFF', textColor: '#333333' },
+        fontSize: 'medium',
+        primaryColor: '#2563eb',
+        headerTextColor: '#ffffff',
+        backgroundColor: '#ffffff',
+        sectionVisibility: {
+            summary: true,
+            technicalSkills: true,
+            professionalExperience: true,
+            education: true,
+            certifications: true
         },
-        layout: 'sidebar-left',
+        sectionOrder: [
+            'summary',
+            'technicalSkills',
+            'professionalExperience',
+            'education',
+            'certifications'
+        ]
     });
 
     const [templates] = useState([
@@ -89,20 +106,50 @@ const Template04 = () => {
         { id: 'executive', name: 'Executive', color: '#004D40', accent: '#00897B' },
     ]);
 
+    const generatePDF = async () => {
+        const resume = resumeRef.current;
+        if (!resume) return;
+
+        try {
+            const canvas = await html2canvas(resume);
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'px',
+                format: [canvas.width, canvas.height]
+            });
+
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            pdf.save('resume.pdf');
+            showNotification('PDF downloaded successfully!');
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            showNotification('Error generating PDF. Please try again.');
+        }
+    };
+
     const showNotification = (message) => {
         setNotification({ show: true, message });
         setTimeout(() => setNotification({ show: false, message: '' }), 3000);
     };
 
-    const handleFileUpload = (e) => {
+    const handleImageUpload = (e) => {
         const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            setResumeData({ ...resumeData, photo: e.target.result });
-            showNotification('Photo updated successfully!');
-        };
-        reader.readAsDataURL(file);
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setResumeData((prev) => ({ ...prev, photo: reader.result }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const addItem = (section, defaultItem) => {
+        setResumeData((prev) => ({
+            ...prev,
+            [section]: Array.isArray(prev[section]) ? [...prev[section], defaultItem] : defaultItem
+        }));
+        showNotification(`Added new item to ${section}!`);
     };
 
     const handleDragEnd = (result) => {
@@ -125,30 +172,6 @@ const Template04 = () => {
             items.splice(destination.index, 0, reorderedItem);
             setResumeData({ ...resumeData, education: items });
         }
-    };
-
-    const generatePDF = () => {
-        const input = resumeRef.current;
-        html2canvas(input, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: resumeData.backgroundColor,
-        }).then((canvas) => {
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgProps = pdf.getImageProperties(imgData);
-            const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
-            pdf.save(`${resumeData.name.toLowerCase().replace(/\s+/g, '-')}-resume.pdf`);
-            toast.success('PDF downloaded successfully!', { position: 'top-center', autoClose: 2000 });
-        }).catch((error) => {
-            console.error('Error generating PDF:', error);
-            toast.error('Failed to download PDF. Check console for details.', { position: 'top-center', autoClose: 2000 });
-        });
     };
 
     const updateField = (field, value) => setResumeData({ ...resumeData, [field]: value });
@@ -259,134 +282,103 @@ const Template04 = () => {
                 fontSize: getFontSize(),
             }}
         >
-            {/* Header Section (Name, Photo, Title) */}
+            {/* Header Section */}
             <div
                 style={{ backgroundColor: resumeData.primaryColor, color: resumeData.headerTextColor }}
-                className="p-6 flex items-center gap-4"
+                className="p-8"
             >
-                <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white/40 flex-shrink-0">
-                    {resumeData.photo ? (
-                        <img src={resumeData.photo} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">No Photo</div>
+                <div className="flex items-center gap-6">
+                    {resumeData.photo && (
+                        <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-white/40">
+                            <img src={resumeData.photo} alt="Profile" className="w-full h-full object-cover" />
+                        </div>
                     )}
+                    <div className="flex-1">
+                        <h1 className="text-3xl font-bold">{resumeData.name}</h1>
+                        <h2 className="text-xl mt-2">{resumeData.title}</h2>
+                    </div>
                 </div>
-                <div className="flex-1">
-                    <h1 className="text-4xl font-bold">{resumeData.name || 'Your Name'}</h1>
-                    <p className="text-xl mt-1">{resumeData.title || 'Your Title'}</p>
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-center gap-2">
+                        <Phone className="h-5 w-5" />
+                        <span>{resumeData.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Mail className="h-5 w-5" />
+                        <span>{resumeData.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <MapPin className="h-5 w-5" />
+                        <span>{resumeData.address}</span>
+                    </div>
                 </div>
             </div>
 
-            {/* Content Section (Sidebar + Main Content) */}
-            <div
-                className="flex"
-                style={{
-                    flexDirection: resumeData.layout === 'sidebar-left' ? 'row' : 'row-reverse',
-                    backgroundColor: resumeData.backgroundColor,
-                }}
-            >
-                {/* Sidebar */}
-                <div
-                    style={{ flex: '0 0 35%', backgroundColor: resumeData.secondaryColor, color: resumeData.sidebarTextColor }}
-                    className="p-6"
-                >
-                    <div className="mb-6">
-                        <h2 className="text-xl font-semibold mb-3 border-b-2 border-white/30 pb-2">Contact</h2>
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2"><Phone className="h-4 w-4" /><span>{resumeData.phone || 'N/A'}</span></div>
-                            <div className="flex items-center gap-2"><Mail className="h-4 w-4" /><span>{resumeData.email || 'N/A'}</span></div>
-                            <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /><span>{resumeData.address || 'N/A'}</span></div>
+            {/* Main Content */}
+            <div className="p-8">
+                {resumeData.sectionVisibility.summary && (
+                    <div className="mb-8">
+                        <h3 className="text-xl font-bold mb-4 border-b-2 border-gray-200 pb-2">Summary</h3>
+                        <p>{resumeData.summary}</p>
+                    </div>
+                )}
+
+                {resumeData.sectionVisibility.technicalSkills && (
+                    <div className="mb-8">
+                        <h3 className="text-xl font-bold mb-4 border-b-2 border-gray-200 pb-2">Technical Skills</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {resumeData.technicalSkills.map((skill, index) => (
+                                <span 
+                                    key={index}
+                                    className="px-3 py-1 bg-gray-100 rounded-full text-sm"
+                                >
+                                    {skill}
+                                </span>
+                            ))}
                         </div>
                     </div>
-                    {resumeData.sectionVisibility.socialLinks && (
-                        <div className="mb-6">
-                            <h2 className="text-xl font-semibold mb-3 border-b-2 border-white/30 pb-2">Social</h2>
-                            <div className="space-y-2">
-                                {resumeData.socialLinks.linkedin && <div className="flex items-center gap-2"><Linkedin className="h-4 w-4" /><span>{resumeData.socialLinks.linkedin}</span></div>}
-                                {resumeData.socialLinks.github && <div className="flex items-center gap-2"><Github className="h-4 w-4" /><span>{resumeData.socialLinks.github}</span></div>}
-                                {resumeData.socialLinks.twitter && <div className="flex items-center gap-2"><Twitter className="h-4 w-4" /><span>{resumeData.socialLinks.twitter}</span></div>}
-                                {resumeData.socialLinks.website && <div className="flex items-center gap-2"><Globe className="h-4 w-4" /><span>{resumeData.socialLinks.website}</span></div>}
-                            </div>
-                        </div>
-                    )}
-                    {sidebarSections.map((section) => (
-                        <div key={section} className="mb-6">
-                            {section === 'summary' && resumeData.sectionVisibility.summary && (
-                                <>
-                                    <h2 className="text-xl font-semibold mb-3 border-b-2 border-white/30 pb-2">Summary</h2>
-                                    <p>{resumeData.summary || 'Your summary here'}</p>
-                                </>
-                            )}
-                            {section === 'technicalSkills' && resumeData.sectionVisibility.technicalSkills && (
-                                <>
-                                    <h2 className="text-xl font-semibold mb-3 border-b-2 border-white/30 pb-2">Skills</h2>
-                                    <ul className="list-none space-y-2">
-                                        {resumeData.technicalSkills.map((skill, index) => (
-                                            <li key={index} className="flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-white/70"></div>
-                                                <span>{skill}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </>
-                            )}
-                        </div>
-                    ))}
-                </div>
+                )}
 
-                {/* Main Content */}
-                <div
-                    style={{ flex: '0 0 65%', color: resumeData.mainTextColor }}
-                    className="p-6"
-                >
-                    {contentSections.map((section) => (
-                        <div key={section} className="mb-8">
-                            {section === 'professionalExperience' && resumeData.sectionVisibility.professionalExperience && (
-                                <>
-                                    <h2 className="text-xl font-semibold border-b-2 pb-2 mb-4" style={{ color: resumeData.primaryColor, borderBottomColor: resumeData.primaryColor }}>
-                                        Professional Experience
-                                    </h2>
-                                    {resumeData.professionalExperience.map((exp) => (
-                                        <div key={exp.id} className="mb-6">
-                                            <h3 className="font-semibold text-lg">{exp.company}</h3>
-                                            <div className="flex justify-between mb-2">
-                                                <span className="font-medium">{exp.title}</span>
-                                                <span className="text-gray-600">{exp.period}</span>
-                                            </div>
-                                            <ul className="list-disc pl-5 space-y-1">
-                                                {exp.responsibilities.map((resp, respIndex) => <li key={respIndex}>{resp}</li>)}
-                                            </ul>
-                                        </div>
+                {resumeData.sectionVisibility.professionalExperience && (
+                    <div className="mb-8">
+                        <h3 className="text-xl font-bold mb-4 border-b-2 border-gray-200 pb-2">Professional Experience</h3>
+                        {resumeData.professionalExperience.map((exp, index) => (
+                            <div key={index} className="mb-6">
+                                <h4 className="text-lg font-semibold">{exp.company}</h4>
+                                <p className="text-gray-600 mb-2">{exp.period}</p>
+                                <ul className="list-disc ml-6">
+                                    {exp.responsibilities.map((resp, idx) => (
+                                        <li key={idx}>{resp}</li>
                                     ))}
-                                </>
-                            )}
-                            {section === 'education' && resumeData.sectionVisibility.education && (
-                                <>
-                                    <h2 className="text-xl font-semibold border-b-2 pb-2 mb-4" style={{ color: resumeData.primaryColor, borderBottomColor: resumeData.primaryColor }}>
-                                        Education
-                                    </h2>
-                                    {resumeData.education.map((edu) => (
-                                        <div key={edu.id} className="mb-4">
-                                            <h3 className="font-semibold">{edu.university}</h3>
-                                            <p>{edu.degree}</p>
-                                            <p className="text-gray-600">{edu.period}</p>
-                                        </div>
-                                    ))}
-                                </>
-                            )}
-                            {section === 'certifications' && resumeData.sectionVisibility.certifications && (
-                                <>
-                                    <h2 className="text-xl font-semibold border-b-2 pb-2 mb-4" style={{ color: resumeData.primaryColor, borderBottomColor: resumeData.primaryColor }}>
-                                        Certifications
-                                    </h2>
-                                    <ul className="list-disc pl-5 space-y-1">
-                                        {resumeData.certifications.map((cert, index) => <li key={index}>{cert}</li>)}
-                                    </ul>
-                                </>
-                            )}
-                        </div>
-                    ))}
-                </div>
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {resumeData.sectionVisibility.education && (
+                    <div className="mb-8">
+                        <h3 className="text-xl font-bold mb-4 border-b-2 border-gray-200 pb-2">Education</h3>
+                        {resumeData.education.map((edu, index) => (
+                            <div key={index} className="mb-4">
+                                <h4 className="text-lg font-semibold">{edu.degree}</h4>
+                                <p>{edu.university}</p>
+                                <p className="text-gray-600">{edu.period}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {resumeData.sectionVisibility.certifications && (
+                    <div className="mb-8">
+                        <h3 className="text-xl font-bold mb-4 border-b-2 border-gray-200 pb-2">Certifications</h3>
+                        <ul className="list-disc ml-6">
+                            {resumeData.certifications.map((cert, index) => (
+                                <li key={index}>{cert}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -450,7 +442,7 @@ const Template04 = () => {
                                                 </div>
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-700 mb-1">Profile Photo</label>
-                                                    <Input type="file" accept="image/*" onChange={handleFileUpload} className="block w-full text-sm text-gray-500" />
+                                                    <Input type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-sm text-gray-500" />
                                                 </div>
                                             </div>
                                         </Section>

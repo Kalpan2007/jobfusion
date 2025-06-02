@@ -35,7 +35,7 @@ import Card from '../components/Resume-Template/card';
 import TabButton from '../components/Resume-Template/TabButton';
 import Section from '../components/Resume-Template/Section';
 import Notification from '../components/Resume-Template/Notification';
-import SaveResumeButton from '../components/Resume-Template/SaveResumeButton';
+import SaveResumeButton from '../components/SaveResumeButton';
 
 const Template06 = () => {
     const resumeRef = useRef(null);
@@ -50,6 +50,7 @@ const Template06 = () => {
 
     // Enhanced Resume Data with modern theme
     const [resumeData, setResumeData] = useState({
+        templateId: "template06",
         photo: '',
         name: 'Aarav Patel',
         title: 'Frontend Developer',

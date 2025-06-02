@@ -2,6 +2,8 @@ import React, { useState, useMemo } from "react";
 import { Document, Page, Text, View, StyleSheet, pdf } from "@react-pdf/renderer";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Phone, Mail, MapPin, Download, Plus, Trash2, Globe } from "lucide-react";
+import { toast, ToastContainer } from "react-toastify";
+import SaveResumeButton from "../components/SaveResumeButton";
 
 // Custom Button Component
 const Button = ({ children, onClick, className = "", variant = "primary", size = "md", ...props }) => {
@@ -118,6 +120,7 @@ const TemplatePDF = ({ resumeData }) => (
 
 function Template02() {
   const [resumeData, setResumeData] = useState({
+    templateId: "template02",
     name: "DANIEL GALLEGO",
     title: "UX DESIGNER",
     address: "123 Anywhere St., Any City",
@@ -324,9 +327,12 @@ function Template02() {
               />
             </div>
           </div>
-          <Button onClick={handleDownloadPDF} className="flex items-center gap-2">
-            <Download className="h-4 w-4" /> Download PDF
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleDownloadPDF} className="flex items-center gap-2">
+              <Download className="h-4 w-4" /> Download PDF
+            </Button>
+            <SaveResumeButton resumeData={resumeData} />
+          </div>
         </div>
 
         {/* Resume Content */}
