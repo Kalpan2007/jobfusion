@@ -25,9 +25,15 @@ export const getTemplateComponent = (templateId, resumeData) => {
     sectionStyles: resumeData.sectionStyles || {},
     sectionOrder: resumeData.sectionOrder || []
   };
-
-  // Create a Map of template components to avoid switch statement
+  // Create a Map of template components with correct mapping
   const templates = new Map([
+    ['Templets_01', Template01],
+    ['Templets_02', Template02],
+    ['Templets_03', Template03],
+    ['Templets_04', Template04],
+    ['Templets_05', Template05],
+    ['Templets_06', Template06],
+    // Backwards compatibility
     ['template01', Template01],
     ['template02', Template02],
     ['template03', Template03],
@@ -36,7 +42,13 @@ export const getTemplateComponent = (templateId, resumeData) => {
     ['template06', Template06]
   ]);
 
+  // Log for debugging
+  console.log("Available templates:", [...templates.keys()]);
+  console.log("Requested template:", templateId);
+
   const SelectedTemplate = templates.get(templateId) || Template01;
+  if (!templates.has(templateId)) {
+    console.warn(`Template ${templateId} not found, falling back to Template01`);
   
   // Create the PDF document structure
   return (
@@ -51,6 +63,7 @@ export const getTemplateComponent = (templateId, resumeData) => {
 // Generate PDF blob from resume data
 export const generatePDFBlob = async (resumeData) => {
   if (!resumeData) {
+    console.error("No resume data provided to generatePDFBlob");
     throw new Error("No resume data provided");
   }
   
@@ -70,6 +83,7 @@ export const generatePDFBlob = async (resumeData) => {
       ...resumeData
     };
     
+    console.log("Generating PDF for template:", completeResumeData.templateId);
     const pdfComponent = getTemplateComponent(completeResumeData.templateId, completeResumeData);
     
     // Create PDF with error handling

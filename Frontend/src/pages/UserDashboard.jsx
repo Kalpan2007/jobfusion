@@ -130,18 +130,41 @@ const Template03 = ({ resumeData }) => {
 const ResumePDFPreview = ({ resumeData }) => {
   const generatePDF = async () => {
     try {
-      console.log("Previewing resumeData:", resumeData);
-      const TemplateComponent = getTemplateComponent(resumeData.templateId, resumeData);
+      console.log("Starting PDF preview process");
+      console.log("Preview resumeData:", resumeData);
+      
+      if (!resumeData || !resumeData.templateId) {
+        throw new Error("Invalid resume data or missing template ID");
+      }
+
+      // Make sure template ID matches the format in templates Map
+      let templateId = resumeData.templateId;
+      if (!templateId.startsWith('Templets_') && !templateId.startsWith('template')) {
+        templateId = `template${templateId.replace(/\D/g, '')}`;
+        console.log("Normalized template ID for preview:", templateId);
+      }
+
+      const TemplateComponent = getTemplateComponent(templateId, resumeData);
+      console.log("Preview template component loaded successfully");
+      
       const blob = await pdf(TemplateComponent).toBlob();
       if (!blob) {
         throw new Error("Failed to generate PDF blob for preview");
       }
+      console.log("Preview PDF blob generated successfully");
+
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
+      
+      // Clean up URL object after a delay to ensure the PDF loads
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 1000);
+      
       toast.success("Preview opened successfully!", { position: "top-center", autoClose: 2000 });
     } catch (error) {
       console.error("Error previewing PDF:", error);
-      toast.error("Failed to preview resume. Check console for details.", { position: "top-center", autoClose: 2000 });
+      toast.error(`Failed to preview resume: ${error.message}`, { position: "top-center", autoClose: 3000 });
     }
   };
 
@@ -172,16 +195,33 @@ const getTemplateComponent = (templateId, resumeData) => {
 const ResumeCard = ({ resume, onDelete }) => {
   const handleDownload = async () => {
     try {
-      console.log("Downloading resumeData:", resume.resumeData);
-      const TemplateComponent = getTemplateComponent(resume.resumeData.templateId, resume.resumeData);
+      console.log("Starting PDF download process for resume:", resume.title);
+      console.log("Resume data:", resume.resumeData);
+      
+      if (!resume.resumeData || !resume.resumeData.templateId) {
+        throw new Error("Invalid resume data or missing template ID");
+      }
+
+      // Make sure template ID matches the format in templates Map
+      let templateId = resume.resumeData.templateId;
+      if (!templateId.startsWith('Templets_') && !templateId.startsWith('template')) {
+        templateId = `template${templateId.replace(/\D/g, '')}`;
+        console.log("Normalized template ID:", templateId);
+      }
+
+      const TemplateComponent = getTemplateComponent(templateId, resume.resumeData);
+      console.log("Template component loaded successfully");
+      
       const blob = await pdf(TemplateComponent).toBlob();
       if (!blob) {
         throw new Error("Failed to generate PDF blob for download");
       }
+      console.log("PDF blob generated successfully");
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${resume.title}.pdf`;
+      link.download = `${resume.title || 'resume'}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -189,7 +229,7 @@ const ResumeCard = ({ resume, onDelete }) => {
       toast.success("PDF downloaded successfully!", { position: "top-center", autoClose: 2000 });
     } catch (error) {
       console.error("Error downloading PDF:", error);
-      toast.error("Failed to download PDF. Check console for details.", { position: "top-center", autoClose: 2000 });
+      toast.error(`Failed to download PDF: ${error.message}`, { position: "top-center", autoClose: 3000 });
     }
   };
 
