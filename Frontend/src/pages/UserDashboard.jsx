@@ -236,6 +236,15 @@ const ResumeCard = ({ resume, onDelete }) => {
 const JobCard = ({ job, onToggle }) => {
   const navigate = useNavigate();
 
+  if (!job) {
+    return null; // Don't render anything if job is undefined
+  }
+
+  // Safely access nested properties
+  const companyName = job.company?.display_name || job.company?.name || 'Company Name Not Available';
+  const locationName = job.location?.display_name || job.location?.name || 'Location Not Available';
+  const jobTitle = job.title || 'Job Title Not Available';
+
   return (
     <div className="bg-black p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer relative">
       <div className="absolute top-4 right-4">
@@ -245,9 +254,9 @@ const JobCard = ({ job, onToggle }) => {
         <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-4">
           <Database className="text-white" />
         </div>
-        <h3 className="font-semibold text-lg mb-2">{job.title}</h3>
-        <p className="text-sm text-gray-600 mb-2">{job.company.display_name}</p>
-        <p className="text-sm text-gray-500">{job.location.display_name}</p>
+        <h3 className="font-semibold text-lg mb-2">{jobTitle}</h3>
+        <p className="text-sm text-gray-600 mb-2">{companyName}</p>
+        <p className="text-sm text-gray-500">{locationName}</p>
       </div>
     </div>
   );
@@ -259,17 +268,21 @@ const UserDashboard = () => {
   const [savedResumes, setSavedResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const storedEmail = localStorage.getItem("userEmail");
-        if (!storedEmail) {
-          setError("No email found in local storage.");
+        const token = localStorage.getItem("token"); // Get the auth token
+        if (!storedEmail || !token) {
+          setError("No email or authentication token found.");
           setLoading(false);
           return;
         }
-        const response = await axios.get(`http://localhost:5000/api/users/profile/${storedEmail}`);
+        const response = await axios.get(`http://localhost:5000/api/users/profile/${storedEmail}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         if (response.data.success) {
           setUserData(response.data.data);
         } else {
@@ -282,14 +295,36 @@ const UserDashboard = () => {
       }
     };
 
-    const fetchSavedData = async () => {
-      const email = localStorage.getItem("userEmail");
-      if (email) {
+    const fetchSavedData = async () => {      const email = localStorage.getItem("userEmail");
+      const token = localStorage.getItem("token");
+      if (email && token) {
         try {
-          // Fetch saved jobs
-          const jobsResponse = await axios.get(`http://localhost:5000/api/jobs/saved/${email}`);
+          // Fetch saved jobs with correct endpoint
+          const jobsResponse = await axios.get(`http://localhost:5000/api/savedjobs/saved/${email}`, {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
           if (jobsResponse.data.success) {
-            setSavedJobs(jobsResponse.data.data.map((item) => item.jobData));
+            // Handle empty array case
+            const jobs = jobsResponse.data.data || [];
+            // Ensure each job has the required structure
+            const validJobs = jobs.map(item => {
+              const jobData = item.jobData || {};
+              return {
+                id: jobData.id,
+                title: jobData.title,
+                company: {
+                  display_name: jobData.company?.display_name || 'Company Not Available'
+                },
+                location: {
+                  display_name: jobData.location?.display_name || 'Location Not Available'
+                },
+                ...jobData // preserve other fields
+              };
+            }).filter(job => job.id); // Only include jobs with valid IDs
+            setSavedJobs(validJobs);
+            console.log('Processed saved jobs:', validJobs);
           }
 
           // Fetch saved resumes
