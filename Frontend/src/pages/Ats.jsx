@@ -1,190 +1,347 @@
-import { useState, useCallback, useEffect } from "react";
-import { useDropzone } from "react-dropzone";
-import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
-import "react-circular-progressbar/dist/styles.css";
-import { Upload, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+"use client"
 
-function ATSChecker() {
-  const [file, setFile] = useState(null);
-  const [score, setScore] = useState(0);
-  const [animatedScore, setAnimatedScore] = useState(0);
-  const [suggestions, setSuggestions] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+import { useState } from "react"
+import { Upload, Loader2, AlertTriangle } from "lucide-react"
 
-  const onDrop = useCallback((acceptedFiles) => {
-    setFile(acceptedFiles[0]);
-    handleFileUpload(acceptedFiles[0]);
-  }, []);
+export default function ATSChecker() {
+  const [file, setFile] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [loadingStep, setLoadingStep] = useState("")
+  const [error, setError] = useState(null)
+  const [result, setResult] = useState(null)
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { "application/pdf": [".pdf"] },
-  });
+  const handleFileChange = (event) => {
+    const file = event.target.files[0]
+    if (file && file.type === "application/pdf") {
+      setFile(file)
+      analyzeResume(file)
+    } else {
+      setError("Please upload a PDF file")
+    }
+  }
 
-  const handleFileUpload = async (file) => {
-    setIsLoading(true);
-    setError(null);
+  const handleDrop = (event) => {
+    event.preventDefault()
+    const file = event.dataTransfer.files[0]
+    if (file && file.type === "application/pdf") {
+      setFile(file)
+      analyzeResume(file)
+    } else {
+      setError("Please upload a PDF file")
+    }
+  }
 
-    const formData = new FormData();
-    formData.append("resume", file);
+  const handleDragOver = (event) => {
+    event.preventDefault()
+  }
+
+  // Fixed PDF text extraction function
+  const extractTextFromPDF = async (file) => {
+    try {
+      // Method 1: Try using PDF.js with proper worker setup
+      try {
+        const pdfjsLib = await import("pdfjs-dist")
+
+        // Set worker source to a reliable CDN
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`
+
+        const arrayBuffer = await file.arrayBuffer()
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+
+        let text = ""
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i)
+          const content = await page.getTextContent()
+          text += content.items.map((item) => item.str).join(" ") + "\n"
+          setLoadingStep(`Processing page ${i} of ${pdf.numPages}...`)
+        }
+
+        if (text.trim()) {
+          return text
+        }
+      } catch (pdfError) {
+        console.log("PDF.js method failed, trying alternative method")
+      }
+
+      // Method 2: Alternative text extraction
+      return await alternativeTextExtraction(file)
+    } catch (error) {
+      throw new Error("Could not extract text from PDF. Please ensure the PDF contains selectable text.")
+    }
+  }
+
+  // Alternative text extraction method
+  const alternativeTextExtraction = async (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+
+      reader.onload = async (event) => {
+        try {
+          const arrayBuffer = event.target.result
+          const uint8Array = new Uint8Array(arrayBuffer)
+          let text = ""
+
+          // Simple text extraction from PDF binary
+          for (let i = 0; i < uint8Array.length - 1; i++) {
+            // Look for text patterns in PDF
+            if (uint8Array[i] === 0x54 && uint8Array[i + 1] === 0x6a) {
+              // "Tj" operator
+              let extractedChunk = ""
+              for (let j = i + 2; j < i + 200 && j < uint8Array.length; j++) {
+                const charCode = uint8Array[j]
+                if (charCode >= 32 && charCode <= 126) {
+                  // Printable ASCII
+                  extractedChunk += String.fromCharCode(charCode)
+                }
+              }
+              if (extractedChunk.length > 3) {
+                text += extractedChunk + " "
+              }
+            }
+          }
+
+          // Clean up the extracted text
+          text = text.replace(/\s+/g, " ").trim()
+
+          if (text.length > 100) {
+            resolve(text)
+          } else {
+            // If we couldn't extract enough text, try reading as text
+            const textReader = new FileReader()
+            textReader.onload = (e) => {
+              const textContent = e.target.result
+              const cleanText = textContent
+                .replace(/[^\x20-\x7E\n\r\t]/g, " ")
+                .replace(/\s+/g, " ")
+                .trim()
+              if (cleanText.length > 50) {
+                resolve(cleanText)
+              } else {
+                reject(new Error("Could not extract sufficient text from PDF"))
+              }
+            }
+            textReader.readAsText(file)
+          }
+        } catch (error) {
+          reject(error)
+        }
+      }
+
+      reader.onerror = () => reject(new Error("Failed to read PDF file"))
+      reader.readAsArrayBuffer(file)
+    })
+  }
+
+  const analyzeResume = async (file) => {
+    setLoading(true)
+    setError(null)
+    setResult(null)
+    setLoadingStep("Preparing PDF analysis...")
 
     try {
-      const response = await fetch("https://jobfusion.onrender.com/api/ats-checker", {
+      // Check file size
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error("File too large. Please upload a PDF smaller than 10MB")
+      }
+
+      setLoadingStep("Extracting text from PDF...")
+      const text = await extractTextFromPDF(file)
+
+      if (!text.trim()) {
+        throw new Error("Could not extract text from PDF")
+      }
+
+      setLoadingStep("Analyzing resume with AI...")
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
-        body: formData,
-      });
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "JobFusion ATS",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "deepseek/deepseek-r1-0528:free",
+          messages: [
+            {
+              role: "system",
+              content:
+                'You are an ATS (Applicant Tracking System) expert. Analyze the resume and provide: 1) An ATS compatibility score (0-100), 2) Pros - what works well, 3) Cons - what needs improvement, 4) Suggestions for improvement. Format response as JSON like: {"score": number, "pros": string[], "cons": string[], "suggestions": string[]}',
+            },
+            {
+              role: "user",
+              content: `Analyze this resume for ATS compatibility:\n\n${text}`,
+            },
+          ],
+          response_format: { type: "json_object" },
+        }),
+      })
+
+      const responseText = await response.text()
 
       if (!response.ok) {
-        throw new Error("Failed to analyze resume");
+        throw new Error(`API Error: ${response.status} - ${responseText}`)
       }
 
-      const data = await response.json();
-
-      if (data.success) {
-        setScore(data.atsScore);
-        setSuggestions(data.suggestions);
-      } else {
-        throw new Error(data.message || "Failed to analyze resume");
+      setLoadingStep("Processing results...")
+      const data = JSON.parse(responseText)
+      if (!data.choices?.[0]?.message?.content) {
+        throw new Error("Invalid API response format")
       }
+
+      const analysis = JSON.parse(data.choices[0].message.content)
+
+      if (!analysis.score || !analysis.pros || !analysis.cons) {
+        throw new Error("Invalid analysis format from AI")
+      }
+
+      setResult(analysis)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
-      setScore(0);
-      setSuggestions([]);
+      console.error("Error details:", err)
+      let errorMessage = "Failed to analyze resume"
+
+      if (err.message.includes("API Error")) {
+        errorMessage = "API Error: Failed to connect to analysis service. Please try again later."
+      } else if (err.message.includes("Invalid API response")) {
+        errorMessage = "Error: Received invalid response from service. Please try again."
+      } else if (err.message.includes("PDF") || err.message.includes("extract")) {
+        errorMessage = "Error: Could not read the PDF file. Please ensure it contains selectable text and try again."
+      } else if (err.message.includes("File too large")) {
+        errorMessage = err.message
+      }
+
+      setError(errorMessage)
+      setResult(null)
     } finally {
-      setIsLoading(false);
+      setLoading(false)
+      setLoadingStep("")
     }
-  };
-
-  useEffect(() => {
-    if (score > 0) {
-      const interval = setInterval(() => {
-        setAnimatedScore((prev) => {
-          if (prev < score) {
-            return prev + 1;
-          }
-          clearInterval(interval);
-          return prev;
-        });
-      }, 20);
-      return () => clearInterval(interval);
-    }
-  }, [score]);
-
-  const handleCheckAnother = () => {
-    setFile(null);
-    setScore(0);
-    setAnimatedScore(0);
-    setSuggestions([]);
-    setError(null);
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-black-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full">
-        <h1 className="text-3xl font-bold text-center mb-8 text-grey">
-          ATS Resume Checker
-        </h1>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">ATS Resume Checker</h1>
+          <p className="mt-2 text-gray-600">Upload your resume to check its ATS compatibility</p>
+        </div>
 
-        {!file ? (
-          <div
-            {...getRootProps()}
-            className="border-2 border-dashed border-[#688BC5] rounded-lg p-8 text-center cursor-pointer transition-colors hover:bg-black"
-          >
-            <input {...getInputProps()} />
-            <Upload className="mx-auto text-[#688BC5] mb-4" size={48} />
-            {isDragActive ? (
-              <p className="text-[#688BC5]">Drop your resume here...</p>
-            ) : (
-              <p className="text-grey">
-                Drag & drop your resume (PDF) or click to upload
-              </p>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-8">
-            <div className="flex items-center justify-between bg-[#F7F9FC] p-4 rounded-lg">
-              <div className="flex items-center">
-                <CheckCircle className="text-green-500 mr-2" />
-                <span className="font-medium">{file.name}</span>
-              </div>
-              <button
-                onClick={() => {
-                  setFile(null);
-                  setScore(0);
-                  setSuggestions([]);
-                  setError(null);
-                }}
-                className="text-[#688BC5] hover:underline"
+        <div className="mt-8">
+          <div className="flex justify-center">
+            <div className="w-full max-w-lg">
+              <label
+                className="flex flex-col justify-center items-center w-full h-64 bg-white border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
               >
-                Remove
-              </button>
+                <div className="flex flex-col justify-center items-center pt-5 pb-6">
+                  <Upload className="w-12 h-12 text-gray-400 mb-4" />
+                  <p className="mb-2 text-sm text-gray-500">
+                    <span className="font-semibold">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500">PDF (up to 10MB)</p>
+                  {file && <p className="mt-2 text-sm text-blue-600 font-medium">Selected: {file.name}</p>}
+                </div>
+                <input type="file" className="hidden" accept=".pdf" onChange={handleFileChange} />
+              </label>
             </div>
+          </div>
 
-            {isLoading ? (
-              <div className="flex justify-center items-center">
-                <Loader2 className="animate-spin text-[#688BC5]" size={48} />
-                <span className="ml-2 text-[#333]">Analyzing your resume...</span>
+          {loading && (
+            <div className="mt-8 text-center">
+              <Loader2 className="animate-spin h-8 w-8 mx-auto text-blue-500" />
+              <p className="mt-2 text-gray-600">{loadingStep}</p>
+              <p className="mt-1 text-sm text-gray-500">This may take up to 30 seconds...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-8 p-4 bg-red-50 rounded-md">
+              <div className="flex">
+                <AlertTriangle className="h-5 w-5 text-red-400" />
+                <p className="ml-3 text-red-700">{error}</p>
               </div>
-            ) : error ? (
-              <div className="text-red-500 text-center">
-                <AlertTriangle className="mx-auto mb-2" size={24} />
-                <p>{error}</p>
+            </div>
+          )}
+
+          {result && (
+            <div className="mt-8 bg-white shadow rounded-lg p-6">
+              <div className="mb-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-900">ATS Score</h2>
+                  <span className="text-2xl font-bold text-blue-600">{result.score}%</span>
+                </div>
+                <div className="mt-2 w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                    style={{ width: `${result.score}%` }}
+                  ></div>
+                </div>
+                <p className="mt-2 text-sm text-gray-600">
+                  {result.score >= 80
+                    ? "Excellent! Your resume is highly ATS-compatible."
+                    : result.score >= 60
+                      ? "Good. Your resume is moderately ATS-compatible but could use improvements."
+                      : "Needs improvement. Your resume may struggle to pass ATS filters."}
+                </p>
               </div>
-            ) : (
-              <>
-                <div className="flex justify-center">
-                  <div className="w-48 h-48">
-                    <CircularProgressbar
-                      value={animatedScore}
-                      text={`${animatedScore}%`}
-                      styles={buildStyles({
-                        textSize: "16px",
-                        pathTransitionDuration: 0.5,
-                        pathColor:
-                          animatedScore > 80
-                            ? "#22c55e"
-                            : animatedScore > 50
-                            ? "#688BC5"
-                            : "#ef4444",
-                        textColor: "#333",
-                      })}
-                    />
-                  </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">What Works Well</h3>
+                  <ul className="space-y-2">
+                    {result.pros.map((pro, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-green-500 mr-2 mt-0.5">✓</span>
+                        <span className="text-gray-700">{pro}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
-                {suggestions.length > 0 && (
-                  <div className="space-y-4">
-                    <h2 className="text-xl font-semibold text-[#333]">
-                      Suggestions for Improvement
-                    </h2>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">Areas for Improvement</h3>
+                  <ul className="space-y-2">
+                    {result.cons.map((con, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-red-500 mr-2 mt-0.5">✗</span>
+                        <span className="text-gray-700">{con}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {result.suggestions && result.suggestions.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-3">Improvement Suggestions</h3>
                     <ul className="space-y-2">
-                      {suggestions.map((suggestion, index) => (
+                      {result.suggestions.map((suggestion, index) => (
                         <li key={index} className="flex items-start">
-                          <AlertTriangle
-                            className="text-[#688BC5] mr-2 flex-shrink-0 mt-1"
-                            size={20}
-                          />
-                          <span>{suggestion}</span>
+                          <span className="bg-blue-100 text-blue-800 font-medium rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 text-xs mr-2 mt-0.5">
+                            {index + 1}
+                          </span>
+                          <span className="text-gray-700">{suggestion}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
+              </div>
 
-                <button
-                  onClick={handleCheckAnother}
-                  className="w-full bg-[#688BC5] text-white py-3 rounded-lg font-medium hover:bg-[#5A7AB0] transition-colors"
-                >
-                  Check Another Resume
-                </button>
-              </>
-            )}
-          </div>
-        )}
+              <button
+                onClick={() => {
+                  setFile(null)
+                  setResult(null)
+                  setError(null)
+                }}
+                className="mt-6 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              >
+                Check Another Resume
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
-  );
+  )
 }
-
-export default ATSChecker;
