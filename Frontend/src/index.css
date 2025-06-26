@@ -17,16 +17,6 @@
   --card-bg: #ffffff;
 }
 
-/* Dark mode variables */
-.dark {
-  --bg-primary: #111827;
-  --bg-secondary: #1f2937;
-  --text-primary: #f9fafb;
-  --text-secondary: #d1d5db;
-  --border-color: #374151;
-  --card-bg: #1f2937;
-}
-
 /* Global styles */
 html {
   transition: background-color 0.3s, color 0.3s;
@@ -36,76 +26,6 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s, color 0.3s;
-}
-
-/* Light Mode */
-body {
-  background-color: white;
-  color: black;
-  transition: background-color 0.3s, color 0.3s;
-}
-
-/* Dark Mode */
-.dark body {
-  background-color: #121212;
-  color: white;
-}
-
-/* Dark mode styles for common elements */
-.dark .bg-white {
-  background-color: #1e1e1e !important;
-}
-
-.dark .bg-gray-100 {
-  background-color: #2d2d2d !important;
-}
-
-.dark .bg-blue-50 {
-  background-color: #1a1a2e !important;
-}
-
-.dark .text-gray-700, 
-.dark .text-gray-800, 
-.dark .text-gray-900 {
-  color: #e0e0e0 !important;
-}
-
-.dark .border-gray-200,
-.dark .border-gray-300 {
-  border-color: #3a3a3a !important;
-}
-
-.dark .shadow-md,
-.dark .shadow-lg {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.4) !important;
-}
-
-/* Form elements in dark mode */
-.dark input,
-.dark select,
-.dark textarea {
-  background-color: #2d2d2d !important;
-  color: white !important;
-  border-color: #3a3a3a !important;
-}
-
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: #9ca3af !important;
-}
-
-/* Card styles in dark mode */
-.dark .card,
-.dark [class*="card-"] {
-  background-color: #1e1e1e !important;
-  color: white !important;
-}
-
-/* Button styles in dark mode */
-.dark button:not([class*="bg-"]),
-.dark .btn:not([class*="bg-"]) {
-  background-color: #2d2d2d !important;
-  color: white !important;
 }
 
 /* Card styles */
@@ -119,13 +39,6 @@ input, select, textarea {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   border-color: var(--border-color);
-}
-
-.dark input, 
-.dark select, 
-.dark textarea {
-  background-color: #374151;
-  color: var(--text-primary);
 }
 
 /* Button styles */
@@ -162,35 +75,6 @@ input, select, textarea {
 .modal {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-}
-
-/* Dark mode scrollbar */
-.dark ::-webkit-scrollbar {
-  width: 12px;
-}
-
-.dark ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background-color: #4b5563;
-  border-radius: 6px;
-  border: 3px solid var(--bg-secondary);
-}
-
-/* Custom dark mode styles */
-.dark .shadow-md,
-.dark .shadow-lg {
-  --tw-shadow-color: rgba(0, 0, 0, 0.3);
-}
-
-.dark .border {
-  border-color: var(--border-color);
-}
-
-.dark .hover\:shadow-lg:hover {
-  --tw-shadow-color: rgba(0, 0, 0, 0.4);
 }
 
 /* Transition for all elements */

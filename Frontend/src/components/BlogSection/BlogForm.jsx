@@ -108,9 +108,9 @@ const SuccessForm = () => {
     >
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
         <div className="w-full max-w-3xl bg-white rounded-xl shadow-xl overflow-hidden">
-          <div className="bg-[#E8F1F9] dark:bg-gray-800 bg-noise bg-opacity-50 backdrop-blur-md rounded-t-xl p-6">
-            <h2 className="text-5xl font-extrabold text-gray-800 dark:text-white tracking-tight mb-2">Share Your Success Story</h2>
-            <p className="text-2xl text-gray-800 dark:text-gray-300">Inspire others with your journey and achievements.</p>
+          <div className="bg-[#E8F1F9] bg-noise bg-opacity-50 backdrop-blur-md rounded-t-xl p-6">
+            <h2 className="text-5xl font-extrabold text-gray-800 tracking-tight mb-2">Share Your Success Story</h2>
+            <p className="text-2xl text-gray-800">Inspire others with your journey and achievements.</p>
           </div>
           <form onSubmit={handleSubmit} className="p-6 space-y-8">
             <div className="grid grid-cols-1 max-sm:grid-cols-1 lg:grid-cols-2 gap-6">
