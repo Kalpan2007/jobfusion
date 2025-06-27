@@ -248,7 +248,7 @@ const ResumeCard = ({ resume, onDelete }) => {
   };
 
   return (
-    <div className="bg-black p-4 rounded-lg shadow-md mb-4 flex justify-between items-center hover:shadow-lg transition-shadow">
+    <div className="bg-white p-4 rounded-lg shadow-md mb-4 flex justify-between items-center hover:shadow-lg transition-shadow">
       <div className="flex items-center space-x-3 min-w-0 flex-1">
         <div className="flex-shrink-0 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
           <FileText className="text-blue-500" size={24} />
@@ -286,7 +286,7 @@ const JobCard = ({ job, onToggle }) => {
   const jobTitle = job.title || 'Job Title Not Available';
 
   return (
-    <div className="bg-black p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer relative">
+    <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer relative">
       <div className="absolute top-4 right-4">
         <BookmarkButton job={job} onToggle={onToggle} />
       </div>
