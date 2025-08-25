@@ -3,8 +3,6 @@ import { Document, Page, View, Text, StyleSheet, pdf } from "@react-pdf/renderer
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Mail, Phone, MapPin, Globe, Trash2, Plus, Download, Linkedin, Twitter, Github } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
-import ResumeAnalyzer from "../components/ResumeAnalyzer";
-
 // Custom Button Component (unchanged)
 const Button = ({ children, onClick, className = "", variant = "primary", size = "md", ...props }) => {
   const baseStyle = "rounded font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
@@ -691,12 +689,9 @@ function Template01() {
               />
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handleDownloadPDF} className="flex items-center gap-2">
-              <Download className="h-4 w-4" /> Download PDF
-            </Button>
-            <ResumeAnalyzer />
-          </div>
+          <Button onClick={handleDownloadPDF} className="flex items-center gap-2">
+            <Download className="h-4 w-4" /> Download PDF
+          </Button>
         </div>
 
         {/* Resume Content with Drag-and-Drop */}
