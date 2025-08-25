@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import ResumeAnalyzer from "../components/ResumeAnalyzer";
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -31,7 +32,7 @@ import Card from '../components/Resume-Template/card';
 import TabButton from '../components/Resume-Template/TabButton';
 import Section from '../components/Resume-Template/Section';
 import Notification from '../components/Resume-Template/Notification';
-import SaveResumeButton from '../components/Resume-Template/SaveResumeButton';
+
 
 const Template04 = () => {
     const resumeRef = useRef(null);
@@ -396,7 +397,7 @@ const Template04 = () => {
                             <Button onClick={generatePDF} className="flex items-center gap-2">
                                 <Download className="h-4 w-4" /> Download PDF
                             </Button>
-                            <SaveResumeButton resumeData={resumeData} />
+                            <ResumeAnalyzer />
                         </div>
                     </div>
                     {!previewMode && (

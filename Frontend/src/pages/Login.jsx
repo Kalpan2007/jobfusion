@@ -16,7 +16,7 @@ function Login() {
     const [view, setView] = useState("login"); // login, verify, forgotPassword, resetPassword
     const navigate = useNavigate();
 
-    const API_BASE_URL = "http://localhost:5000/api/users";
+    const API_BASE_URL = "https://jobfusion.onrender.com/api/users";
 
     // Function to handle input changes (optimized with useCallback)
     const handleChange = useCallback((e) => {

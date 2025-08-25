@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Document, Page, View, Text, StyleSheet, pdf } from "@react-pdf/renderer";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Phone, Mail, MapPin, Globe, Download, Plus, Trash2 } from "lucide-react";
-import SaveResumeButton from "../components/SaveResumeButton";
+import ResumeAnalyzer from "../components/ResumeAnalyzer";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Modal from "react-modal";
@@ -470,7 +470,7 @@ function Template03() {
             <button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
               <Download className="h-4 w-4" /> Download PDF
             </button>
-            <SaveResumeButton resumeData={{ ...resumeData, templateId: "template03" }} />
+            <ResumeAnalyzer />
           </div>
         </div>
 

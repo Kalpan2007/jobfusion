@@ -3,7 +3,7 @@ import { Document, Page, View, Text, StyleSheet, pdf } from "@react-pdf/renderer
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Mail, Phone, MapPin, Globe, Trash2, Plus, Download, Linkedin, Twitter, Github } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
-import SaveResumeButton from "../components/SaveResumeButton";
+import ResumeAnalyzer from "../components/ResumeAnalyzer";
 
 // Custom Button Component (unchanged)
 const Button = ({ children, onClick, className = "", variant = "primary", size = "md", ...props }) => {
@@ -695,7 +695,7 @@ function Template01() {
             <Button onClick={handleDownloadPDF} className="flex items-center gap-2">
               <Download className="h-4 w-4" /> Download PDF
             </Button>
-            <SaveResumeButton resumeData={resumeData} />
+            <ResumeAnalyzer />
           </div>
         </div>
 

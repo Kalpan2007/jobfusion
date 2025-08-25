@@ -33,7 +33,7 @@ import Card from '../components/Resume-Template/card';
 import TabButton from '../components/Resume-Template/TabButton';
 import Section from '../components/Resume-Template/Section';
 import Notification from '../components/Resume-Template/Notification';
-import SaveResumeButton from '../components/Resume-Template/SaveResumeButton';
+import ResumeAnalyzer from '../components/ResumeAnalyzer';
 
 const Template05 = () => {
     const resumeRef = useRef(null);
@@ -408,7 +408,7 @@ const Template05 = () => {
                             <Button onClick={generatePDF} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700" title="Download your resume as PDF">
                                 <Download className="h-4 w-4" /> Download PDF
                             </Button>
-                            <SaveResumeButton resumeData={resumeData} />
+                            <ResumeAnalyzer />
                         </div>
                     </div>
                     {!previewMode && (
