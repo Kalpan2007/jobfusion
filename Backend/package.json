@@ -7,12 +7,7 @@
     "dev": "nodemon server.js",
     "lint": "eslint . --ext .js",
     "format": "prettier --write '**/*.{js,jsx,json}'",
-    "prepare": "husky install"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
+    "prepare": "if [ -d '.git' ]; then husky install; fi"
   },
   "lint-staged": {
     "*.{js,jsx}": [
@@ -46,6 +41,8 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.5",
     "nodemon": "^3.1.9"
   }
 }
