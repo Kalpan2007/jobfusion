@@ -9,7 +9,7 @@ const savedJobRoutes = require("./src/routes/savedJobRoutes");
 const reviewRoutes = require("./src/routes/reviewRoutes"); // Import review routes
 const newStailerRoutes = require("./src/routes/newStailerRoutes");
 const atsRoutes = require("./src/routes/atsRoutes");
-const resumeRoutes = require("./src/routes/resumeRoutes");
+const analyzeRoutes = require("./src/routes/analyzeRoutes");
 const UserExperienceRoutes = require('./src/routes/UserExperienceRoutes');
 
 // MongoDB connection
@@ -46,7 +46,7 @@ app.use('/api/savedjobs', savedJobRoutes); // Mount saved jobs routes under a di
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/newstailer', newStailerRoutes);
 app.use('/api/ats', atsRoutes);
-app.use('/api/resumes', resumeRoutes);
+app.use('/api/resume', analyzeRoutes);
 app.use('/api/experience', UserExperienceRoutes);
 
 // Error handling middleware
