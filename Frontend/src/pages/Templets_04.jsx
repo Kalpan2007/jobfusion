@@ -48,6 +48,12 @@ const Template04 = () => {
         phone: '123-456-7890',
         email: 'email@yourmail.com',
         summary: 'A Sales Executive with 10+ years of professional experience...',
+        socialLinks: {
+            linkedin: '',
+            github: '',
+            twitter: '',
+            website: ''
+        },
         technicalSkills: [
             'Sales Strategy',
             'Client Relations',
