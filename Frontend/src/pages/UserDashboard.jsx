@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Database, User } from "lucide-react";
+import { Database, User, LogOut } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import BookmarkButton from "../components/SaveBtn";
@@ -39,29 +39,76 @@ const UserDashboard = () => {
   const [savedJobs, setSavedJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  // Helper function to validate token
+  const validateToken = (token) => {
+    if (!token) return false;
+    try {
+      // Basic JWT token validation (check if it's expired)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      return payload.exp > currentTime;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  // Helper function to handle auth errors
+  const handleAuthError = (error) => {
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      toast.error("Authentication failed. Please login again.");
+      localStorage.removeItem("token");
+      localStorage.removeItem("userEmail");
+      navigate("/login");
+      return true;
+    }
+    return false;
+  };
+
+  // Helper function to logout user
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
+    navigate("/login");
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const storedEmail = localStorage.getItem("userEmail");
         const token = localStorage.getItem("token");
+        
         if (!storedEmail || !token) {
           setError("No email or authentication token found.");
           setLoading(false);
           return;
         }
+
+        // Validate token before making request
+        if (!validateToken(token)) {
+          toast.error("Token expired. Please login again.");
+          logout();
+          return;
+        }
+
         const response = await axios.get(`https://jobfusion.onrender.com/api/users/profile/${storedEmail}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
+        
         if (response.data.success) {
           setUserData(response.data.data);
         } else {
           setError("Failed to fetch user data.");
         }
       } catch (err) {
+        if (handleAuthError(err)) {
+          return;
+        }
         setError("Error fetching user data.");
+        console.error("User data fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -70,41 +117,53 @@ const UserDashboard = () => {
     const fetchSavedJobs = async () => {
       const email = localStorage.getItem("userEmail");
       const token = localStorage.getItem("token");
-      if (email && token) {
-        try {
-          const response = await axios.get(`https://jobfusion.onrender.com/api/savedjobs/saved/${email}`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          });
-          if (response.data.success) {
-            const jobs = response.data.data || [];
-            const validJobs = jobs.map(item => {
-              const jobData = item.jobData || {};
-              return {
-                id: jobData.id,
-                title: jobData.title,
-                company: {
-                  display_name: jobData.company?.display_name || 'Company Not Available'
-                },
-                location: {
-                  display_name: jobData.location?.display_name || 'Location Not Available'
-                },
-                ...jobData
-              };
-            }).filter(job => job.id);
-            setSavedJobs(validJobs);
+      
+      if (!email || !token) {
+        return;
+      }
+
+      // Validate token before making request
+      if (!validateToken(token)) {
+        return;
+      }
+
+      try {
+        const response = await axios.get(`https://jobfusion.onrender.com/api/savedjobs/saved/${email}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
           }
-        } catch (err) {
-          console.error("Error fetching saved jobs:", err);
-          toast.error("Failed to fetch saved jobs");
+        });
+        
+        if (response.data.success) {
+          const jobs = response.data.data || [];
+          const validJobs = jobs.map(item => {
+            const jobData = item.jobData || {};
+            return {
+              id: jobData.id,
+              title: jobData.title,
+              company: {
+                display_name: jobData.company?.display_name || 'Company Not Available'
+              },
+              location: {
+                display_name: jobData.location?.display_name || 'Location Not Available'
+              },
+              ...jobData
+            };
+          }).filter(job => job.id);
+          setSavedJobs(validJobs);
         }
+      } catch (err) {
+        if (handleAuthError(err)) {
+          return;
+        }
+        console.error("Error fetching saved jobs:", err);
+        toast.error("Failed to fetch saved jobs");
       }
     };
 
     fetchUserData();
     fetchSavedJobs();
-  }, []);
+  }, [navigate]);
 
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
   if (error) return <div className="min-h-screen bg-gray-50 flex items-center justify-center text-red-500">{error}</div>;
@@ -114,16 +173,25 @@ const UserDashboard = () => {
       {/* Header with User Profile */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-white rounded-full p-1">
-              <div className="w-full h-full bg-blue-100 rounded-full flex items-center justify-center">
-                <User size={32} className="text-blue-600" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-white rounded-full p-1">
+                <div className="w-full h-full bg-blue-100 rounded-full flex items-center justify-center">
+                  <User size={32} className="text-blue-600" />
+                </div>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">{userData?.username || "User"}</h2>
+                <p className="text-blue-100 text-sm">{userData?.email || "email@example.com"}</p>
               </div>
             </div>
-            <div>
-              <h2 className="text-xl font-bold">{userData?.username || "User"}</h2>
-              <p className="text-blue-100 text-sm">{userData?.email || "email@example.com"}</p>
-            </div>
+            <button
+              onClick={logout}
+              className="flex items-center space-x-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-colors"
+            >
+              <LogOut size={20} />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
       </div>
